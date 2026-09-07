@@ -1,0 +1,80 @@
+name: Build Seal für Windows
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'windows/**'
+      - '.github/workflows/build-windows.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'windows/**'
+  release:
+    types: [created]
+  workflow_dispatch:  # manuell auslösbar
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: windows
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: windows/package-lock.json
+
+      - name: yt-dlp herunterladen
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path resources | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "resources/yt-dlp.exe"
+          Write-Host "yt-dlp Version: $(./resources/yt-dlp.exe --version)"
+
+      - name: FFmpeg herunterladen
+        shell: pwsh
+        run: |
+          $url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+          Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip"
+          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-tmp" -Force
+          $ffmpegBin = Get-ChildItem -Path "ffmpeg-tmp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          Copy-Item $ffmpegBin.FullName "resources/ffmpeg.exe"
+          $ffprobeBin = Get-ChildItem -Path "ffmpeg-tmp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+          Copy-Item $ffprobeBin.FullName "resources/ffprobe.exe"
+          Remove-Item -Recurse -Force "ffmpeg-tmp", "ffmpeg.zip"
+          Write-Host "FFmpeg bereit"
+
+      - name: npm Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Electron App bauen
+        run: npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build-Artefakte hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: seal-windows-installer
+          path: |
+            windows/release/*.exe
+            windows/release/*.yml
+          retention-days: 30
+
+      - name: Bei Release automatisch veröffentlichen
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            windows/release/*.exe
+            windows/release/*.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

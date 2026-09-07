@@ -1,0 +1,6 @@
+Lege hier die folgenden Dateien ab:
+- yt-dlp.exe     → von https://github.com/yt-dlp/yt-dlp/releases/latest
+- ffmpeg.exe     → von https://github.com/BtbN/FFmpeg-Builds/releases
+- ffprobe.exe    → (enthalten im FFmpeg-Paket)
+
+Danach: npm run build

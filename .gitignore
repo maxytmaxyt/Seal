@@ -17,3 +17,13 @@
 local.properties
 /keystore.properties
 .kotlin
+# Windows port build artifacts
+windows/node_modules/
+windows/dist/
+windows/dist-electron/
+windows/release/
+windows/resources/yt-dlp.exe
+windows/resources/ffmpeg.exe
+windows/resources/ffprobe.exe
+windows/ffmpeg.zip
+windows/ffmpeg-tmp/
