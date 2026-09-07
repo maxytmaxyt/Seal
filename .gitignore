@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-electron/
+release/
+resources/yt-dlp.exe
+resources/ffmpeg.exe
+resources/ffprobe.exe
+.DS_Store
+*.log
