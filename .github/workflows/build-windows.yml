@@ -57,7 +57,7 @@ jobs:
       - name: Electron App bauen
         run: npm run build
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GIT_TOKEN }}
 
       - name: Build-Artefakte hochladen
         uses: actions/upload-artifact@v4
@@ -77,4 +77,4 @@ jobs:
             windows/release/*.exe
             windows/release/*.yml
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
