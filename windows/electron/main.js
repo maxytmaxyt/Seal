@@ -6,16 +6,14 @@ const os = require('os')
 
 // yt-dlp binary path (bundled in resources or found in PATH)
 function getYtdlpPath() {
-  // In production: look in resources folder
   if (app.isPackaged) {
     const resourcePath = process.resourcesPath
     const binPath = path.join(resourcePath, 'resources', 'yt-dlp.exe')
     if (fs.existsSync(binPath)) return binPath
   }
-  // Dev: look in ./resources/yt-dlp.exe or fall back to PATH
   const localBin = path.join(__dirname, '..', 'resources', 'yt-dlp.exe')
   if (fs.existsSync(localBin)) return localBin
-  return 'yt-dlp' // must be in PATH
+  return 'yt-dlp'
 }
 
 function getFfmpegPath() {
@@ -27,7 +25,7 @@ function getFfmpegPath() {
   return 'ffmpeg'
 }
 
-const activeDownloads = new Map() // id -> child process
+const activeDownloads = new Map()
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -35,7 +33,7 @@ function createWindow() {
     height: 720,
     minWidth: 800,
     minHeight: 560,
-    frame: false,        // custom titlebar
+    frame: false,
     titleBarStyle: 'hidden',
     backgroundColor: '#0f0f0f',
     webPreferences: {
@@ -46,7 +44,6 @@ function createWindow() {
     icon: path.join(__dirname, '..', 'public', 'icon.ico'),
   })
 
-  // Load app
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL)
   } else {
@@ -59,14 +56,12 @@ function createWindow() {
 app.whenReady().then(() => {
   const win = createWindow()
 
-  // Window controls (custom titlebar)
   ipcMain.on('window:minimize', () => win.minimize())
   ipcMain.on('window:maximize', () => {
     win.isMaximized() ? win.unmaximize() : win.maximize()
   })
   ipcMain.on('window:close', () => win.close())
 
-  // Pick download folder
   ipcMain.handle('dialog:pickFolder', async () => {
     const result = await dialog.showOpenDialog(win, {
       properties: ['openDirectory'],
@@ -75,7 +70,7 @@ app.whenReady().then(() => {
     return result.canceled ? null : result.filePaths[0]
   })
 
-  // Fetch video info (title, thumbnail, formats)
+  // Fetch video info
   ipcMain.handle('ytdlp:getInfo', async (_, url) => {
     return new Promise((resolve, reject) => {
       const ytdlp = getYtdlpPath()
@@ -83,6 +78,7 @@ app.whenReady().then(() => {
         url,
         '--dump-json',
         '--no-playlist',
+        '--js-runtimes', 'node', // JS-Runtime für yt-dlp aktivieren
         '--socket-timeout', '10',
       ]
       let stdout = ''
@@ -110,18 +106,17 @@ app.whenReady().then(() => {
     const ffmpeg = getFfmpegPath()
     const outputDir = options.outputDir || path.join(os.homedir(), 'Downloads', 'Seal')
 
-    // Ensure output dir exists
     fs.mkdirSync(outputDir, { recursive: true })
 
     const args = [
       url,
+      '--js-runtimes', 'node', // JS-Runtime für yt-dlp aktivieren
       '--ffmpeg-location', path.dirname(ffmpeg),
       '-o', path.join(outputDir, '%(title).200B.%(ext)s'),
       '--newline',
       '--progress',
     ]
 
-    // Format selection
     if (options.audioOnly) {
       args.push('-x', '--audio-format', options.audioFormat || 'mp3')
     } else {
@@ -148,7 +143,6 @@ app.whenReady().then(() => {
     proc.stdout.on('data', data => {
       const lines = data.toString().split('\n').filter(Boolean)
       for (const line of lines) {
-        // Parse progress: [download]  45.2% of 123.45MiB at 1.23MiB/s ETA 00:10
         const progressMatch = line.match(/\[download\]\s+([\d.]+)%\s+of\s+([\d.]+\w+)\s+at\s+([\d.]+\w+\/s)\s+ETA\s+([\d:]+)/)
         if (progressMatch) {
           event.sender.send('ytdlp:progress', {
@@ -180,7 +174,6 @@ app.whenReady().then(() => {
     })
   })
 
-  // Cancel download
   ipcMain.on('ytdlp:cancel', (_, id) => {
     const proc = activeDownloads.get(id)
     if (proc) {
@@ -189,12 +182,10 @@ app.whenReady().then(() => {
     }
   })
 
-  // Open folder in Explorer
   ipcMain.on('shell:openFolder', (_, folderPath) => {
     shell.openPath(folderPath)
   })
 
-  // Get yt-dlp version
   ipcMain.handle('ytdlp:version', async () => {
     return new Promise(resolve => {
       const proc = spawn(getYtdlpPath(), ['--version'], { windowsHide: true })
