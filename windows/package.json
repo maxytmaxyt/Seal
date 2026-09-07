@@ -5,6 +5,10 @@
   "main": "dist-electron/main.js",
   "author": "maxytmaxyt",
   "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxytmaxyt/Seal.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build && electron-builder",
