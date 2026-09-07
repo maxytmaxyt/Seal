@@ -3,13 +3,12 @@ name: Build Seal für Windows
 on:
   push:
     branches: [main]
-    paths:
-      - 'windows/**'
-      - '.github/workflows/build-windows.yml'
+    paths-ignore:
+      - '**.md'
   pull_request:
     branches: [main]
-    paths:
-      - 'windows/**'
+    paths-ignore:
+      - '**.md'
   release:
     types: [created]
   workflow_dispatch:
@@ -17,9 +16,6 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: windows
 
     steps:
       - name: Repository auschecken
@@ -50,7 +46,6 @@ jobs:
           Remove-Item -Recurse -Force "ffmpeg-tmp", "ffmpeg.zip"
           Write-Host "FFmpeg bereit"
 
-      
       - name: npm Abhängigkeiten installieren
         run: npm install
 
@@ -64,8 +59,8 @@ jobs:
         with:
           name: seal-windows-installer
           path: |
-            windows/release/*.exe
-            windows/release/*.yml
+            release/*.exe
+            release/*.yml
           if-no-files-found: warn
           retention-days: 30
 
@@ -74,7 +69,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            windows/release/*.exe
-            windows/release/*.yml
+            release/*.exe
+            release/*.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
